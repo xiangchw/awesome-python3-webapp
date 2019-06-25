@@ -93,84 +93,77 @@ class Model(dict, metaclass=ModelMetaclass):
             setattr(self, key, value)
         return value
 
-#   用@classmethod注解类方法.
-@classmethod
-async def find(cls, pk):
-    # 'find object by primary key.'
-    #   由于下面定义了cls.__select__的前半句,这里只需要加上WHERE限定语句即可.
-    rs = await select('%s WHERE `%s`=?' % (cls.__select__,cls.__primary_key__),[pk],1)
-    if len(rs) == 0:
-        return None
-    #   最终转为调用类的对象.这里的**表示将字典中的元素拆分成key=value的参数形式,如果是*则是把元祖的成员转为单个参数.
-    return cls(**rs[0])
+    #   用@classmethod注解类方法.
+    @classmethod
+    async def find(cls, pk):
+        # 'find object by primary key.'
+        #   由于下面定义了cls.__select__的前半句,这里只需要加上WHERE限定语句即可.
+        rs = await select('%s WHERE `%s`=?' % (cls.__select__,cls.__primary_key__),[pk],1)
+        if len(rs) == 0:
+            return None
+        #   最终转为调用类的对象.这里的**表示将字典中的元素拆分成key=value的参数形式,如果是*则是把元祖的成员转为单个参数.
+        return cls(**rs[0])
 
-#   findAll()找出所有满足条件的记录.这里结果需要转为对应对象,所以也设计为类方法.
-#   查找所有记录的where子句还包括是否排序和是否分页的选项. 排序和分页可能没有,所以用**kw
-#   查询条件可以由参数args直接输入例如: args=['id between 1 and 10']
-@classmethod
-async def findAll(cls, args=[], **kw):
-    sql = cls.__select__
-    if args!=[]:
-        sql = sql + ' '  + 'WHERE %s'
-    orderby = kw.get('orderBy', None)
-    if orderby:
-        sql = sql + 'ORDERBY '+orderby
-    limit = kw.get('limit', None)
-    if limit:
-        if isinstance(limit, int):
-            sql = sql + ' limit '+limit
-        elif isinstance(limit, tuple):
-            sql = sql + ' limit '+str(limit[0])+' ,'+str(limit[1])
-        else:
-            raise ValueError('Invalid limit value, limit must be an Integer or an tuple with Integer.')
-    rs = await select(sql,args)
-    return [cls(**r) for r in rs]
+    #   findAll()找出所有满足条件的记录.这里结果需要转为对应对象,所以也设计为类方法.
+    #   查找所有记录的where子句还包括是否排序和是否分页的选项. 排序和分页可能没有,所以用**kw
+    #   查询条件可以由参数args直接输入例如: args=['id between 1 and 10']
+    @classmethod
+    async def findAll(cls, args=[], **kw):
+        sql = cls.__select__
+        if args!=[]:
+            sql = sql + ' '  + 'WHERE %s'
+        orderby = kw.get('orderBy', None)
+        if orderby:
+            sql = sql + 'ORDERBY '+orderby
+        limit = kw.get('limit', None)
+        if limit:
+            if isinstance(limit, int):
+                sql = sql + ' limit '+limit
+            elif isinstance(limit, tuple):
+                sql = sql + ' limit '+str(limit[0])+' ,'+str(limit[1])
+            else:
+                raise ValueError('Invalid limit value, limit must be an Integer or an tuple with Integer.')
+        rs = await select(sql,args)
+        return [cls(**r) for r in rs]
 
-#   查找符合条件的记录总数.
-@classmethod
-async def findNumber(cls,selectedField, args=[]):
-    #   这里用_num_作为别名,方便最后从结果中取得数据.
-    sql = 'SELECT  count(%s)  _num_  FROM `%s`' % (selectedField, cls.__table__)
-    if args != []:
-        sql = sql + ' WHERE %s'
-    rs = await select(sql, args)
-    if len(rs) == 0:
-        return None
-    return rs[0]['_num_']
+    #   查找符合条件的记录总数.
+    @classmethod
+    async def findNumber(cls,selectedField, args=[]):
+        #   这里用_num_作为别名,方便最后从结果中取得数据.
+        sql = 'SELECT  count(%s)  _num_  FROM `%s`' % (selectedField, cls.__table__)
+        if args != []:
+            sql = sql + ' WHERE %s'
+        rs = await select(sql, args)
+        if len(rs) == 0:
+            return None
+        return rs[0]['_num_']
 
-#   实例方法
-async def save(self):
-    #   将__fields__没有赋值的元素设置默认值,转为list.
-    args = list(map(self.getValueOrDefault, self.__fileds__))
-    #   将主键获取默认值后添加到list.
-    args.append(self.getValueOrDefault(self.__primary_key__))
-    rows = await execute(self.__insert__, args)
-    if rows != 1:
-        logging.warn('failed to insert record: affected rows: %s ' % rows)
+    #   实例方法
+    async def save(self):
+        #   将__fields__没有赋值的元素设置默认值,转为list.
+        args = list(map(self.getValueOrDefault, self.__fileds__))
+        #   将主键获取默认值后添加到list.
+        args.append(self.getValueOrDefault(self.__primary_key__))
+        rows = await execute(self.__insert__, args)
+        if rows != 1:
+            logging.warn('failed to insert record: affected rows: %s ' % rows)
 
-#   更新一条记录.
-async def update(self):
-    #   通过getvalue方法获取模型中对应field的值.
-    args = list(map(self.getvalue ,self.__fields__))
-    args = list.append(self.getvalue(self.__primary_key__))
-    rows = await execute(self.__update__, args)
-    if rows != 1:
-        logging.warning('failed to update record: affected rows: %s' % rows)
+    #   更新一条记录.
+    async def update(self):
+        #   通过getvalue方法获取模型中对应field的值.
+        args = list(map(self.getvalue ,self.__fields__))
+        args = list.append(self.getvalue(self.__primary_key__))
+        rows = await execute(self.__update__, args)
+        if rows != 1:
+            logging.warning('failed to update record: affected rows: %s' % rows)
 
-#   删除一条记录
-async def remove(self):
-    args = list(self.getvalue(self.__primary_key__))
-    rows = await execute(self.__delete__,args)
-    if rows != 1:
-        logging.warning('failed to remove record: affected rows: %s' % rows)
+    #   删除一条记录
+    async def remove(self):
+        args = list(self.getvalue(self.__primary_key__))
+        rows = await execute(self.__delete__,args)
+        if rows != 1:
+            logging.warning('failed to remove record: affected rows: %s' % rows)
 
-#   创建多个?,用逗号连缀在一起.如: ?, ?, ?
-
-def create_args_string(num):
-    L = []
-    for n in range(num):
-        L.append('?')
-        return ', '.join(L)
 
 #   映射列的基类
 class Field(object):
@@ -190,6 +183,12 @@ class StringField(Field):
     def __init__(self, name=None, primary_key=False, default=None, ddl='varchar(100)'):
         super().__init__(name, ddl, primary_key, default)
 
+#   创建多个?,用逗号连缀在一起.如: ?, ?, ?
+def create_args_string(num):
+    L = []
+    for n in range(num):
+        L.append('?')
+        return ', '.join(L)
 
 #   定义元类ModelMataclass,用来生成其它类.
 class ModelMetaclass(type):
