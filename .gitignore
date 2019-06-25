@@ -1,0 +1,4 @@
+# Ignore idea files
+.idea/
+# Ignore test.py
+www/test.py
