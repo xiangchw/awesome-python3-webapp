@@ -1,29 +1,16 @@
-import asyncio
 import unittest
 
 from models import Comment
 from test import blog_test, user_test
 import orm
-from test.user_test import async_test, dbpoolinit
+from test.test_utils import async_test, dbpoolinit, clearTable
 
-# # 对协程进行装饰,通过loop让其运行起来.
-# def async_test(coron):
-#     def wrapper(*args, **kw):
-#         _loop = asyncio.new_event_loop()
-#         asyncio.set_event_loop(_loop)
-#         return _loop.run_until_complete(coron(*args, **kw))
-#
-#     return wrapper
+
 #   创建一个新的评论对象.
 def getNewComment(comment_id):
     u = user_test.getNewUser(1)
     b = blog_test.getNewBlog(1)
     return Comment(id=comment_id, blog_id=b.id,user_id=u.id,user_name=u.name,user_image=u.image,content='good job!')
-
-#   清空comments表
-# noinspection SqlWithoutWhere
-async def clearComments():
-    await orm.execute('DELETE FROM comments', None)
 
 class TestComments(unittest.TestCase):
 
@@ -31,7 +18,7 @@ class TestComments(unittest.TestCase):
     @async_test
     async def testSave(self):
         await dbpoolinit()
-        await clearComments()
+        await clearTable('comments')
         c = getNewComment(1)
         result = await c.save()
         self.assertEqual(orm.Result.Success, result, 'save test failed.')
@@ -66,7 +53,7 @@ class TestComments(unittest.TestCase):
     @async_test
     async def testFindAll(self):
         await dbpoolinit()
-        await clearComments()
+        await clearTable('comments')
         #   初始化5条数据
         for x in range(5):
             c = getNewComment(x)
@@ -76,14 +63,16 @@ class TestComments(unittest.TestCase):
         self.assertEqual(5,len(result), 'findAll test failed.')
 
     # 测试findNumbers方法
+    @async_test
     async def testFindNumbers(self):
         await dbpoolinit()
-        await clearComments()
+        await clearTable('comments')
         #   初始化5条数据
         for x in range(5):
             c = getNewComment(x)
             await c.save()
-        result = await Comment.findNumber('id','id>? and id <? ',[1,3])
+        result = await Comment.findNumber('id','id>=? and id <? ',[0,3])
+        print('找到', result)
         self.assertEqual(3, result,'findNumbers test failed.')
 
 if __name__=='__main__':
