@@ -182,7 +182,7 @@ class Model(dict, metaclass=ModelMetaclass):
     #   查找所有记录的where子句还包括是否排序和是否分页的选项. 排序和分页可能没有,所以用**kw
     #   查询条件可以由参数args直接输入例如: args=['id between 1 and 10']
     @classmethod
-    async def findAll(cls, where, args=None, **kw):
+    async def findAll(cls, where=None, args=None, **kw):
         sql = cls.__select__
         if where!= None:
             sql = sql + ' WHERE %s' % (where,)

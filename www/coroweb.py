@@ -82,7 +82,7 @@ def has_named_kw_args(fn):
     :param fn:
     :return: Boolean 有True,无False
     """
-    params = inspect.signature(fn).parames
+    params = inspect.signature(fn).parameters
     for name, param in params.items():
         if param.kind == inspect.Parameter.KEYWORD_ONLY:
             return True

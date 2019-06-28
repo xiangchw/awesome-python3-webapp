@@ -4,6 +4,7 @@ import json
 import logging
 import os
 
+from config import configs
 import orm
 from jinja2 import Environment, FileSystemLoader
 
@@ -158,12 +159,12 @@ async def index(request):
 # 新版aiohttp中,通过runner运行一个app.
 async def init(loop):
     await orm.create_pool(loop=loop, host='127.0.0.1', port=3306, user='www-data', password='www-data', db='awesome')
-    app = web.Application(loop=loop, middlewares=[
+    app = web.Application( middlewares=[
         logger_factory, response_factory, data_factory
     ])
     init_jinja2(app, filters=dict(datetime=datetime_filter))
     #   router直接通过add_get更简单.
-    app.router.add_get('/', lambda x: web.Response(body='Hello World!'))
+    # app.router.add_get('/', lambda x: web.Response(body='Hello World!'))
     add_routes(app, 'handlers')
     add_static(app)
 
