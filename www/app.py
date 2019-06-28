@@ -1,8 +1,4 @@
-import asyncio
-import datetime
-import json
-import logging
-import os
+import asyncio,datetime,time,json,logging, os
 
 from config import configs
 import orm
@@ -137,7 +133,7 @@ def datetime_filter(t):
     :param t:
     :return:
     """
-    delta = int(datetime.time.time() - t)
+    delta = int(time.time() - t)
     if delta < 60:
         return u'1分钟前'
     if delta < 3600:
@@ -159,9 +155,11 @@ async def index(request):
 # 新版aiohttp中,通过runner运行一个app.
 async def init(loop):
     await orm.create_pool(loop=loop, host='127.0.0.1', port=3306, user='www-data', password='www-data', db='awesome')
-    app = web.Application( middlewares=[
+    app = web.Application(middlewares=[
         logger_factory, response_factory, data_factory
     ])
+    #   把datetime_filter注册到jinja2, 然后就可以在jinja2的html模板中通过这种格式调用:
+    #   调用格式:   {{ blog.created_at|datetime}}
     init_jinja2(app, filters=dict(datetime=datetime_filter))
     #   router直接通过add_get更简单.
     # app.router.add_get('/', lambda x: web.Response(body='Hello World!'))
