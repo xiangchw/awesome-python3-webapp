@@ -150,16 +150,19 @@ class RequestHandler(object):
                 if not request.content_type:
                     return web.HTTPBadRequest('Missing Content-Type.')
                 ct = request.content_type.lower()
-                if ct.startswith('applicaton/json'):
+                if ct.startswith('application/json'):
                     params = await request.json()
                     if not isinstance(params, dict):
                         return web.HTTPBadRequest('JSON body must be object.')
                     kw = params
+                    logging.info('获得json',kw)
                 elif ct.startswith('application/x-www-form-urlencoded') or ct.startswith('multipart/form-data'):
                     params = await request.post()
-                    kw = dict(**kw)
+                    kw = dict(**params)
+                    logging.info('获得form',kw)
                 else:
-                    return web.HTTPBadRequest('Unsupported Content-Type: %s ' % request.content_type)
+                    msg = 'Unsupported Content-Type: %s ' % request.content_type
+                    return web.HTTPBadRequest()
 
             if request.method == 'GET':
                 qs = request.query_string
@@ -220,9 +223,6 @@ def add_static(app):
 def add_route(app,fn):
     """
     注册URL处理函数
-    :param app:
-    :param fn:
-    :return:
     """
     method = getattr(fn,'__method__',None)
     path = getattr(fn,'__route__',None)

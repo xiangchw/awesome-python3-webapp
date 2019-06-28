@@ -1,4 +1,5 @@
 import asyncio,datetime,time,json,logging, os
+import io
 
 from config import configs
 import orm
@@ -65,9 +66,9 @@ async def data_factory(app, handler):
 
     async def parse_data(request):
         if request.method == 'POST':
-            if request.content_type.startwith('application/json'):
+            if request.content_type.startswith('application/json'):
                 request.__data__ = await request.json()
-            elif request.content_type.startwith('application/x-www-form-urlencoded'):
+            elif request.content_type.startswith('application/x-www-form-urlencoded'):
                 request.__data__ = await request.post()
                 logging.info('request form: %s' % str(request.__data__))
         return await handler(request)
@@ -104,7 +105,9 @@ async def response_factory(app, handler):
         if isinstance(r, dict):
             template = r.get('__template__')
             if template is None:
-                resp = web.Response(body=json.dump(r, ensure_ascii=False, default=lambda o: o.__dict__).encode('utf-8'))
+                # json.dumps是转为json字符串,  json.dump是转为字节流并输出到给定的file-like object.
+                resp = web.Response(body=json.dumps(r, ensure_ascii=False, default=lambda o: o.__dict__)
+                                    .encode('utf-8'))
                 resp.content_type = 'application/json;charset=utf-8'
                 return resp
             else:
