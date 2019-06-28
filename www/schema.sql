@@ -14,9 +14,9 @@ create table users
     `admin`      bool         not null,
     `name`       varchar(50)  not null,
     `image`      varchar(500) not null,
-    `created_at` real         not null,         #   如果mysql开启REAL_AS_FLOAT选项,REAL当做FLOAT,否则当做DOUBLE处理
-    unique key `idx_email` (`email`),      #    唯一索引, 邮件地址
-    key `idx_create_at` (`created_at`),     #   普通索引,创建时间
+    `created_at` real         not null, #   如果mysql开启REAL_AS_FLOAT选项,REAL当做FLOAT,否则当做DOUBLE处理
+    unique key `idx_email` (`email`),   #    唯一索引, 邮件地址
+    key `idx_create_at` (`created_at`), #   普通索引,创建时间
     primary key (`id`)
 ) engine = innodb
   default charset utf8;
